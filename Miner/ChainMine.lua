@@ -7,6 +7,7 @@ local oreList = {
 		"minecraft:gold_ore",
 		v1="minecraft:diamond_ore",
 		"minecraft:redstone_ore",
+		"minecraft:lit_redstone_ore",
 		"minecraft:lapis_ore",
 		"minecraft:emerald_ore",
 		"minecraft:quartz_ore",
