@@ -5,7 +5,8 @@ local oreList = {
 		"minecraft:coal_ore",
 		"minecraft:iron_ore",
 		"minecraft:gold_ore",
-		"minecraft:diamond_ore",
+		v1="minecraft:diamond_ore",
+		"minecraft:redstone_ore",
 		"minecraft:lapis_ore",
 		"minecraft:emerald_ore",
 		"minecraft:quartz_ore",
@@ -19,18 +20,18 @@ local oreList = {
 
 function ChainMine.isOre (success, dat)
 	if (not success) then
-		return false
+		return false, false
 	end
 	for k, v in ipairs(oreList.nameWithoutMetas) do
 		if (dat.name == v) then
-			return true
+			return true, (k ~= nil and string.find(k,"v"))
 		end
 	end
 	for k1, v1 in ipairs(oreList.nameWithMetas) do
 		if (dat.name == v1.name) then
 			for k2, v2 in ipairs(v1.metas) do
 				if (dat.metadata == v2) then
-					return true
+					return true, (k ~= nil and string.find(k,"v"))
 				end
 			end
 		end
@@ -38,10 +39,21 @@ function ChainMine.isOre (success, dat)
 	return false
 end
 
+function ChainMine.digForward()
+	while not turtle.forward() do
+		turtle.dig()
+	end
+end
+
+function ChainMine.digUp()
+	while not turtle.up() do
+		turtle.digUp()
+	end
+end
+
 function ChainMine.chainMine()
 	if (ChainMine.isOre(turtle.inspectUp())) then
-		turtle.digUp()
-		turtle.up()
+		ChainMine.digUp()
 		ChainMine.chainMine()
 		turtle.down()
 	end
@@ -52,29 +64,25 @@ function ChainMine.chainMine()
 		turtle.up()
 	end
 	if (ChainMine.isOre(turtle.inspect())) then
-		turtle.dig()
-		turtle.forward()
+		ChainMine.digForward()
 		ChainMine.chainMine()
 		turtle.back()
 	end
 	turtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		turtle.dig()
-		turtle.forward()
+		ChainMine.digForward()
 		ChainMine.chainMine()
 		turtle.back()
 	end
 	turtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		turtle.dig()
-		turtle.forward()
+		ChainMine.digForward()
 		ChainMine.chainMine()
 		turtle.back()
 	end
 	turtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		turtle.dig()
-		turtle.forward()
+		ChainMine.digForward()
 		ChainMine.chainMine()
 		turtle.back()
 	end
