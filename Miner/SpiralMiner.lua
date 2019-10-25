@@ -86,7 +86,7 @@ function SpiralMiner.dumpToBox()
 	end
 
 	local hasFuel = false;
-	local isFullBox = true;
+	local space = 0;
 	for i = 1, 16 do
 		if ((not hasFuel) and turtle.getItemDetail(i).name == fuel.coal.name) then
 			hasFuel = true;
@@ -94,7 +94,7 @@ function SpiralMiner.dumpToBox()
 			turtle.select(i)
 			turtle.drop()
 			if (turtle.getItemCount(i) == 0) then
-				isFullBox = false
+				space = space + 1
 			end
 		end
 	end
@@ -103,11 +103,11 @@ function SpiralMiner.dumpToBox()
 	turtle.turnLeft()
 	turtle.turnLeft()
 
-	return (not isFullBox)
+	return space > 1
 end
 
 function SpiralMiner.goOrigin()
-	os.exit()
+	exit()
 	-- TODO
 end
 
