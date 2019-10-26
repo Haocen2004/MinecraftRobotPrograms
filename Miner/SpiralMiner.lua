@@ -1,19 +1,40 @@
 local SpiralMiner = {}
 local CM = require("/MinecraftRobotPrograms/Miner/ChainMine")
 -- local AT = require("/MinecraftRobotPrograms/Miner/AdvancedTurtle")
+local keepRun = true
+local errorMsg = ""
 
 function SpiralMiner.main()
-	while (not redstone.getInput("back")) do
+	while (not redstone.getInput("back") and keepRun) do
 		SpiralMiner.updateDirection()
+
 		SpiralMiner.digForward()
 		CM.chainMine()
-		while turtle.detectUp() do
+		while not turtle.up() do
 			turtle.digUp()
 		end
+		CM.chainMine()
+		turtle.down()
+
 		SpiralMiner.checkInv()
 		SpiralMiner.checkFuel()
 		print("current fuel: "..turtle.getFuelLevel().."/"..turtle.getFuelLimit())
-		print("length: "..length.." distance: "..distance)
+		print("spiralLength: "..spiralLength.." distance: "..distance)
+	end
+
+	if (not keepRun) then
+		print(errorMsg)
+	end
+end
+
+local spiralLength = 3
+local distance = 1
+function SpiralMiner.updateDirection()
+	distance = distance + 1
+	if (distance == spiralLength) then
+		distance = 1
+		spiralLength = spiralLength + 1
+		turtle.turnLeft()
 	end
 end
 
@@ -45,9 +66,10 @@ function SpiralMiner.checkFuel()
 		end
 	end
 
-	-- if (turtle.getFuelLevel() < (math.abs(rX) + math.abs(rY))+150) then
-	-- 	SpiralMiner.goOrigin()
-	-- end
+	if (turtle.getFuelLevel() < (math.abs(rX) + math.abs(rY))+150) then
+		SpiralMiner.goOrigin()
+		SpiralMiner.exit("Out Of Fuel")
+	end
 end
 
 function SpiralMiner.checkInv()
@@ -80,13 +102,8 @@ function SpiralMiner.dumpToBox()
 	if (not hasBox) then
 		return false
 	end
-	turtle.turnLeft()
-	turtle.turnLeft()
-	if (not turtle.place()) then
-		turtle.turnLeft()
-		turtle.turnLeft()
-		return false
-	end
+
+	turtle.placeUp()
 
 	local hasFuel = false;
 	local space = 0;
@@ -95,33 +112,54 @@ function SpiralMiner.dumpToBox()
 			hasFuel = true;
 		else
 			turtle.select(i)
-			turtle.drop()
+			turtle.dropUp()
 			if (turtle.getItemCount(i) == 0) then
 				space = space + 1
 			end
 		end
 	end
 	
-	turtle.dig()
-	turtle.turnLeft()
-	turtle.turnLeft()
+	turtle.digUp()
 
 	return space > 1
 end
 
 function SpiralMiner.goOrigin()
-	exit()
-	-- TODO
-end
+	local targetDistance = (spiralLength - 1) / 2
+	if (targetDistance % 2 == 0) then
+		if ((targetDistance / 2) % 2 == 0) then
+			targetDistance = targetDistance + 1
+		else
+			targetDistance = targetDistance - 1
+		end
+	end
+	local currentDistance = distance
+	while (currentDistance ~= targetDistance) do
+		if (currentDistance > targetDistance) then
+			turtle.back()
+			currentDistance = currentDistance - 1
+		else
+			turtle.digForward()
+			currentDistance = currentDistance + 1
+		end
+	end
+	turtle.turnLeft()
+	local targetCross = (spiralLength - 1) / 2
+	if (targetCross % 2 == 1) then
+		if ((targetDistance / 2) % 2 == 0) then
+			targetCross = targetCross - 1
+		else
+			targetCross = targetCross + 1
+		end
+	end
+	for i=1,targetCross do
+		turtle.digForward
+	end
 
-local length = 3
-local distance = 1
-function SpiralMiner.updateDirection()
-	distance = distance + 1
-	if (distance == length) then
-		distance = 1
-		length = length + 1
-		turtle.turnLeft()
+	turtle.dropUp()
+
+	if (not turtle.suckDown(1)) then
+		SpiralMiner.exit("Out Of Box")
 	end
 end
 
@@ -135,6 +173,11 @@ function SpiralMiner.digUp()
 	while not turtle.up() do
 		turtle.digUp()
 	end
+end
+
+function SpiralMiner.SpiralMiner.exit(msg)
+	keepRun = false
+	errorMsg = msg
 end
 
 SpiralMiner.main()

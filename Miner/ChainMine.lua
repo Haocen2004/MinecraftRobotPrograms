@@ -32,7 +32,7 @@ function ChainMine.isOre (success, dat)
 		if (dat.name == v1.name) then
 			for k2, v2 in ipairs(v1.metas) do
 				if (dat.metadata == v2) then
-					return true, (k ~= nil and string.find(k,"v"))
+					return true, (k2 ~= nil and string.find(k2,"v"))
 				end
 			end
 		end
