@@ -1,8 +1,6 @@
 local SpiralMiner = {}
 local CM = require("/MinecraftRobotPrograms/Miner/ChainMine")
 -- local AT = require("/MinecraftRobotPrograms/Miner/AdvancedTurtle")
-local keepRun = true
-local errorMsg = ""
 
 function SpiralMiner.main()
 	while (not redstone.getInput("back") and keepRun) do
@@ -67,8 +65,11 @@ function SpiralMiner.checkFuel()
 	end
 
 	if (turtle.getFuelLevel() < (math.abs(rX) + math.abs(rY))+150) then
-		SpiralMiner.goOrigin()
-		SpiralMiner.exit("Out Of Fuel")
+		SpiralMiner.goOrigin(
+			function()
+				SpiralMiner.exit("Out Of Fuel")
+			end
+		)
 	end
 end
 
@@ -79,7 +80,7 @@ function SpiralMiner.checkInv()
 		end
 	end
 	if (not SpiralMiner.dumpToBox()) then
-		SpiralMiner.goOrigin()
+		SpiralMiner.goOrigin(SpiralMiner.changeBox)
 	end
 	return false
 end
@@ -124,7 +125,20 @@ function SpiralMiner.dumpToBox()
 	return space > 1
 end
 
-function SpiralMiner.goOrigin()
+function SpiralMiner.changeBox()
+	for i=1,16 do
+		turtle.select(i)
+		if (not turtle.dropUp()) then
+			SpiralMiner.exit("Failed Dumping In Origin")
+		end
+	end
+	if (not turtle.suckDown(1)) then
+		SpiralMiner.exit("Out Of Box In Origin")
+	end
+end
+
+function SpiralMiner.goOrigin(todo)
+	-- Manage the way back (inevitably destroy some diamonds!)
 	local targetDistance = (spiralLength - 1) / 2
 	if (targetDistance % 2 == 0) then
 		if ((targetDistance / 2) % 2 == 0) then
@@ -153,13 +167,24 @@ function SpiralMiner.goOrigin()
 		end
 	end
 	for i=1,targetCross do
-		turtle.digForward
+		turtle.digForward()
 	end
 
-	turtle.dropUp()
+	todo()
 
-	if (not turtle.suckDown(1)) then
-		SpiralMiner.exit("Out Of Box")
+	-- Then return to the breakpoint
+	for i=1,targetCross do
+		turtle.back()
+	end
+	turtle.turnRight()
+	while (currentDistance ~= distance) do
+		if (currentDistance > distance) then
+			turtle.back()
+			currentDistance = currentDistance - 1
+		else
+			turtle.forward()
+			currentDistance = currentDistance + 1
+		end
 	end
 end
 
@@ -175,9 +200,9 @@ function SpiralMiner.digUp()
 	end
 end
 
-function SpiralMiner.SpiralMiner.exit(msg)
-	keepRun = false
-	errorMsg = msg
+function SpiralMiner.exit(msg)
+	print(msg)
+	os.exit()
 end
 
 SpiralMiner.main()
