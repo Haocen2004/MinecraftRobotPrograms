@@ -1,38 +1,35 @@
 local SpiralMiner = {}
-local CM = require("/MinecraftRobotPrograms/Miner/ChainMine")
--- local AT = require("/MinecraftRobotPrograms/Miner/AdvancedTurtle")
-
-function SpiralMiner.main()
-	while (not redstone.getInput("back") and keepRun) do
-		SpiralMiner.updateDirection()
-
-		SpiralMiner.digForward()
-		CM.chainMine()
-		while not turtle.up() do
-			turtle.digUp()
-		end
-		CM.chainMine()
-		turtle.down()
-
-		SpiralMiner.checkInv()
-		SpiralMiner.checkFuel()
-		print("current fuel: "..turtle.getFuelLevel().."/"..turtle.getFuelLimit())
-		print("spiralLength: "..spiralLength.." distance: "..distance)
-	end
-
-	if (not keepRun) then
-		print(errorMsg)
-	end
-end
+local ChainMine = require("/MinecraftRobotPrograms/Miner/ChainMine")
+local AdvancedTurtle = require("/MinecraftRobotPrograms/Miner/AdvancedTurtle")
 
 local spiralLength = 3
 local distance = 1
+function SpiralMiner.main()
+	print("Input Robot Direction: ")
+	AdvancedTurtle.setFacing(io.read())
+	while (not redstone.getInput("back")) do
+		AdvancedTurtle.digForward(15)
+		ChainMine.chainMine()
+		AdvancedTurtle.digUp(15)
+		ChainMine.chainMine()
+		AdvancedTurtle.down()
+
+		SpiralMiner.checkFuel()
+		print("current fuel: "..turtle.getFuelLevel().."/"..turtle.getFuelLimit())
+		SpiralMiner.checkInv()
+
+		SpiralMiner.updateDirection()
+		print("spiralLength: "..spiralLength.." distance: "..distance)
+		print("rX: "..AdvancedTurtle.relative.x.." rZ: "..AdvancedTurtle.relative.z)
+	end
+end
+
 function SpiralMiner.updateDirection()
 	distance = distance + 1
 	if (distance == spiralLength) then
 		distance = 1
-		spiralLength = spiralLength + 1
-		turtle.turnLeft()
+		spiralLength = spiralLength + 2
+		AdvancedTurtle.turnLeft()
 	end
 end
 
@@ -43,46 +40,33 @@ local fuel = {
 	}
 }
 function SpiralMiner.checkFuel()
-	local hasFuel = true;
-	while (turtle.getFuelLimit() - turtle.getFuelLevel() >= fuel.coal.value and hasFuel) do
+	local fuelList = AdvancedTurtle.findInvItem(fuel.coal.name)
+	for i,v in ipairs(fuelList) do
 		local coalRequired = math.floor((turtle.getFuelLimit() - turtle.getFuelLevel())/80)
-		if (coalRequired > 64) then
-			coalRequired = 64
+		local coalToFuel = coalRequired
+		if (coalToFuel > 64) then
+			coalToFuel = 64
 		end
-		hasFuel = false;
 
-		if (turtle.refuel(coalRequired)) then
-			hasFuel = true
-		else
-			for i=1,16 do
-				if (turtle.getItemCount(i) > 0 and turtle.getItemDetail(i)~= nil and turtle.getItemDetail(i).name==fuel.coal.name) then
-					turtle.select(i)
-					hasFuel = true
-					break
-				end
-			end
-		end
+		turtle.select(v)
+		turtle.refuel(coalToFuel)
 	end
 
-	if (turtle.getFuelLevel() < (math.abs(rX) + math.abs(rY))+150) then
+	if (turtle.getFuelLevel() <= AdvancedTurtle.manhattan() + 50) then
 		SpiralMiner.goOrigin(
 			function()
-				SpiralMiner.exit("Out Of Fuel")
+				error("Out Of Fuel")
 			end
 		)
 	end
 end
 
 function SpiralMiner.checkInv()
-	for i=1,16 do
-		if (turtle.getItemCount(i) == 0) then
-			return true
+	if (#AdvancedTurtle.findInvSpace() < 1) then
+		if (not SpiralMiner.dumpToBox()) then
+			SpiralMiner.goOrigin(SpiralMiner.dumpOrigin)
 		end
 	end
-	if (not SpiralMiner.dumpToBox()) then
-		SpiralMiner.goOrigin(SpiralMiner.changeBox)
-	end
-	return false
 end
 
 local BoxItem = {
@@ -90,119 +74,99 @@ local BoxItem = {
 	name = "ic2:te",
 	damage = 111
 }
+local wastes = {
+	-- common wastes
+	["minecraft:cobblestone"] = true,
+	["minecraft:stone"] = true,
+	["minecraft:dirt"] = true,
+	["minecraft:gravel"] = true,
+	["minecraft:flint"] = true,
+
+	-- mineshaft wastes
+	["minecraft:planks"] = true,
+	["minecraft:torch"] = true,
+	["minecraft:fence"] = true,
+}
+
+-- try to dump wastes to ground and valuables to box
+-- keep a stack of fuel in inventory
+-- Return: a boolean, if there is space in turtle
 function SpiralMiner.dumpToBox()
-	local hasBox = false;
-	for i=1,16 do
-		local item = turtle.getItemDetail(i)
-		if (item ~= nil and item.name == BoxItem.name and item.count == 1 and item.damage == BoxItem.damage) then
-			turtle.select(i)
-			hasBox = true
-			break
-		end
+	local iBox = AdvancedTurtle.findInvItem(BoxItem.name, BoxItem.damage)[1]
+	if (iBox == nil or turtle.getItemCount(iBox) > 1) then
+		error("No Box/More Than One Box")
 	end
-	if (not hasBox) then
-		return false
-	end
-
+	turtle.select(iBox)
 	turtle.placeUp()
-
-	local hasFuel = false;
-	local space = 0;
-	for i = 1, 16 do
-		if ((not hasFuel) and turtle.getItemDetail(i).name == fuel.coal.name) then
-			hasFuel = true;
-		else
-			turtle.select(i)
-			turtle.dropUp()
-			if (turtle.getItemCount(i) == 0) then
-				space = space + 1
-			end
+	turtle.digDown()
+	local iFuel = AdvancedTurtle.findInvItem(fuel.coal.name)[1]
+	AdvancedTurtle.forEachInv(function (i)
+		if (i == iFuel or turtle.getItemCount(i) == 0) then
+			return
 		end
-	end
-	
+		turtle.select(i)
+		if (wastes[turtle.getItemDetail(i).name]) then
+			turtle.dropDown()
+		else
+			turtle.dropUp()
+		end
+	end)
 	turtle.digUp()
-
-	return space > 1
+	
+	return #AdvancedTurtle.findInvSpace() > 0
 end
 
-function SpiralMiner.changeBox()
-	for i=1,16 do
-		turtle.select(i)
-		if (not turtle.dropUp()) then
-			SpiralMiner.exit("Failed Dumping In Origin")
+function SpiralMiner.dumpOrigin()
+	local iBox = AdvancedTurtle.findInvItem(BoxItem.name, BoxItem.damage)[1]
+	if (iBox == nil or turtle.getItemCount(iBox) > 1) then
+		error("No Box/More Than One Box")
+	end
+	turtle.select(iBox)
+	turtle.placeUp()
+	local iFuel = AdvancedTurtle.findInvItem(fuel.coal.name)[1]
+	AdvancedTurtle.forEachInv(function (i)
+		while (i ~= iFuel and turtle.getItemCount(i) > 0) do
+			turtle.select(i)
+			if (not turtle.dropDown()) then
+				error("Storage Is Full")
+			end
+			turtle.suckUp()
 		end
-	end
-	if (not turtle.suckDown(1)) then
-		SpiralMiner.exit("Out Of Box In Origin")
-	end
+	end)
 end
 
 function SpiralMiner.goOrigin(todo)
-	-- Manage the way back (inevitably destroy some diamonds!)
-	local targetDistance = (spiralLength - 1) / 2
-	if (targetDistance % 2 == 0) then
-		if ((targetDistance / 2) % 2 == 0) then
-			targetDistance = targetDistance + 1
+	-- Manage the way back (inevitably destroy some diamonds on the way!)
+	while (true) do
+		local mov1 = AdvancedTurtle.relative.dot(AdvancedTurtle.relative,AdvancedTurtle.facing.d)
+		if (mov1 < 0) then
+			AdvancedTurtle.digForward(15, true)
+		elseif (mov1 > 0) then
+			AdvancedTurtle.digBack(15, true)
 		else
-			targetDistance = targetDistance - 1
+			break
 		end
 	end
-	local currentDistance = distance
-	while (currentDistance ~= targetDistance) do
-		if (currentDistance > targetDistance) then
-			turtle.back()
-			currentDistance = currentDistance - 1
-		else
-			turtle.digForward()
-			currentDistance = currentDistance + 1
-		end
-	end
-	turtle.turnLeft()
-	local targetCross = (spiralLength - 1) / 2
-	if (targetCross % 2 == 1) then
-		if ((targetDistance / 2) % 2 == 0) then
-			targetCross = targetCross - 1
-		else
-			targetCross = targetCross + 1
-		end
-	end
-	for i=1,targetCross do
-		turtle.digForward()
+	AdvancedTurtle.turnLeft(true)
+	while not AdvancedTurtle.inOrigin() do
+		AdvancedTurtle.digForward(15, true)
 	end
 
 	todo()
 
-	-- Then return to the breakpoint
-	for i=1,targetCross do
-		turtle.back()
+	if (turtle.getFuelLevel() <= AdvancedTurtle.manhattan() + 50) then
+		error("No Fuel To Return Breakpoint")
 	end
-	turtle.turnRight()
-	while (currentDistance ~= distance) do
-		if (currentDistance > distance) then
-			turtle.back()
-			currentDistance = currentDistance - 1
+
+	-- Then return to the breakpoint with undo stack
+	while (true) do
+		local undo = AdvancedTurtle.popUndoStack()
+		if (undo ~= null) then
+			undo()
 		else
-			turtle.forward()
-			currentDistance = currentDistance + 1
+			break
 		end
 	end
-end
-
-function SpiralMiner.digForward()
-	while not turtle.forward() do
-		turtle.dig()
-	end
-end
-
-function SpiralMiner.digUp()
-	while not turtle.up() do
-		turtle.digUp()
-	end
-end
-
-function SpiralMiner.exit(msg)
-	print(msg)
-	os.exit()
 end
 
 SpiralMiner.main()

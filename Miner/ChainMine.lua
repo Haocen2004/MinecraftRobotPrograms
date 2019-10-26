@@ -1,93 +1,79 @@
 local ChainMine = {}
+local AdvancedTurtle = require("/MinecraftRobotPrograms/Miner/AdvancedTurtle")
 
 local oreList = {
-	nameWithoutMetas = {
-		"minecraft:coal_ore",
-		"minecraft:iron_ore",
-		"minecraft:gold_ore",
-		v1="minecraft:diamond_ore",
-		"minecraft:redstone_ore",
-		"minecraft:lit_redstone_ore",
-		"minecraft:lapis_ore",
-		"minecraft:emerald_ore",
-		"minecraft:quartz_ore",
-		"biomsoplenty:biome_block"
-	},
-	nameWithMetas = {
-		{name="ic2:resource",metas={1,2,3,4}},
-		{name="biomsoplenty:gem_ore",metas={0,1,2,3,4,5,6,7}},
-	}
+	["minecraft:coal_ore:0"] = false,
+	["minecraft:iron_ore:0"] = false,
+	["minecraft:gold_ore:0"] = false,
+	["minecraft:diamond_ore:0"] = true,
+	["minecraft:redstone_ore:0"] = false,
+	["minecraft:lit_redstone_ore:0"] = false,
+	["minecraft:lapis_ore:0"] = false,
+	["minecraft:emerald_ore:0"] = false,
+	["minecraft:quartz_ore:0"] = false,
+	["biomsoplenty:biome_block:0"] = false,
+	["ic2:resource:1"] = false,
+	["ic2:resource:2"] = false,
+	["ic2:resource:3"] = false,
+	["ic2:resource:4"] = false,
+	["biomsoplenty:gem_ore:0"] = false,
+	["biomsoplenty:gem_ore:1"] = false,
+	["biomsoplenty:gem_ore:2"] = false,
+	["biomsoplenty:gem_ore:3"] = false,
+	["biomsoplenty:gem_ore:4"] = false,
+	["biomsoplenty:gem_ore:5"] = false,
+	["biomsoplenty:gem_ore:6"] = false,
+	["biomsoplenty:gem_ore:7"] = false,
 }
 
 function ChainMine.isOre (success, dat)
 	if (not success) then
-		return false, false
+		return false
 	end
-	for k, v in ipairs(oreList.nameWithoutMetas) do
-		if (dat.name == v) then
-			return true, (k ~= nil and string.find(k,"v"))
-		end
+	local oreStr = dat.name..":"..dat.metadata
+	if (oreList[oreStr] == nil) then
+		return false
 	end
-	for k1, v1 in ipairs(oreList.nameWithMetas) do
-		if (dat.name == v1.name) then
-			for k2, v2 in ipairs(v1.metas) do
-				if (dat.metadata == v2) then
-					return true, (k2 ~= nil and string.find(k2,"v"))
-				end
-			end
-		end
-	end
-	return false
-end
 
-function ChainMine.digForward()
-	while not turtle.forward() do
-		turtle.dig()
-	end
-end
-
-function ChainMine.digUp()
-	while not turtle.up() do
-		turtle.digUp()
-	end
+	-- don't consider valuable ore
+	return (not oreList[oreStr])
 end
 
 function ChainMine.chainMine()
 	if (ChainMine.isOre(turtle.inspectUp())) then
-		ChainMine.digUp()
+		AdvancedTurtle.digUp(15)
 		ChainMine.chainMine()
-		turtle.down()
+		AdvancedTurtle.down()
 	end
 	if (ChainMine.isOre(turtle.inspectDown())) then
-		turtle.digDown()
-		turtle.down()
+		AdvancedTurtle.digDown(15)
 		ChainMine.chainMine()
-		turtle.up()
+		AdvancedTurtle.up()
 	end
 	if (ChainMine.isOre(turtle.inspect())) then
-		ChainMine.digForward()
+		AdvancedTurtle.digForward(15)
 		ChainMine.chainMine()
-		turtle.back()
+		AdvancedTurtle.back()
 	end
-	turtle.turnLeft()
+	AdvancedTurtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		ChainMine.digForward()
+		AdvancedTurtle.digForward(15)
 		ChainMine.chainMine()
-		turtle.back()
+		AdvancedTurtle.back()
 	end
-	turtle.turnLeft()
+	AdvancedTurtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		ChainMine.digForward()
+		AdvancedTurtle.digForward(15)
 		ChainMine.chainMine()
-		turtle.back()
+		AdvancedTurtle.back()
 	end
-	turtle.turnLeft()
+	AdvancedTurtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		ChainMine.digForward()
+		AdvancedTurtle.digForward(15)
 		ChainMine.chainMine()
-		turtle.back()
+		AdvancedTurtle.back()
 	end
-	turtle.turnLeft()
+	AdvancedTurtle.turnLeft()
 end
 
 return ChainMine
