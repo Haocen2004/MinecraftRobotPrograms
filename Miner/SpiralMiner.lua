@@ -4,13 +4,16 @@ local CM = require("/MinecraftRobotPrograms/Miner/ChainMine")
 
 function SpiralMiner.main()
 	while (not redstone.getInput("back")) do
-		SpiralMiner.checkInv()
-		-- SpiralMiner.updateDirection()
+		SpiralMiner.updateDirection()
 		SpiralMiner.digForward()
 		CM.chainMine()
-		turtle.digUp()
+		while turtle.detectUp() do
+			turtle.digUp()
+		end
+		SpiralMiner.checkInv()
 		SpiralMiner.checkFuel()
 		print("current fuel: "..turtle.getFuelLevel().."/"..turtle.getFuelLimit())
+		print("length: "..length.." distance: "..distance)
 	end
 end
 
@@ -33,7 +36,7 @@ function SpiralMiner.checkFuel()
 			hasFuel = true
 		else
 			for i=1,16 do
-				if (turtle.getItemCount(i) > 0 and turtle.getItemDetail(i).name==fuel.coal.name) then
+				if (turtle.getItemCount(i) > 0 and turtle.getItemDetail(i)~= nil and turtle.getItemDetail(i).name==fuel.coal.name) then
 					turtle.select(i)
 					hasFuel = true
 					break
@@ -111,8 +114,15 @@ function SpiralMiner.goOrigin()
 	-- TODO
 end
 
+local length = 3
+local distance = 1
 function SpiralMiner.updateDirection()
-	-- TODO
+	distance = distance + 1
+	if (distance == length) then
+		distance = 1
+		length = length + 1
+		turtle.turnLeft()
+	end
 end
 
 function SpiralMiner.digForward()
