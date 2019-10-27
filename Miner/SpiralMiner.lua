@@ -134,7 +134,7 @@ function SpiralMiner.dumpToBox()
 	end
 	turtle.digUp()
 	
-	return #AdvancedTurtle.findInvSpace() > INV_SPACE_TO_DUMP
+	return #AdvancedTurtle.findInvSpace() > INV_SPACE_TO_DUMP + 1
 end
 
 function SpiralMiner.dumpOrigin()
