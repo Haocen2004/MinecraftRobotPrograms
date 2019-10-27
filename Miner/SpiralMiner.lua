@@ -75,7 +75,7 @@ end
 
 function SpiralMiner.checkInv()
 	if (#AdvancedTurtle.findInvSpace() < INV_SPACE_TO_DUMP) then
-		if (AdvancedTurtle.sortUpInv() >= INV_SPACE_TO_DUMP or (not SpiralMiner.dumpToBox())) then
+		if (AdvancedTurtle.sortUpInv() <= INV_SPACE_TO_DUMP and (not SpiralMiner.dumpToBox())) then
 			SpiralMiner.goOrigin(SpiralMiner.dumpOrigin)
 		end
 	end
