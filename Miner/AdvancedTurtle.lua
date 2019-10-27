@@ -16,6 +16,10 @@ function AdvancedTurtle.setFacing(facing)
 	end
 end
 
+function AdvancedTurtle.setOrigin(x, y, z)
+	AdvancedTurtle.origin = vector.new(x, y, z)
+end
+
 function AdvancedTurtle.turnLeft(undoable)
 	turtle.turnLeft()
 	AdvancedTurtle.facing = EnumFacing[AdvancedTurtle.facing.l]
@@ -42,93 +46,92 @@ function AdvancedTurtle.turnBack(clockwise)
 	end
 end
 
-function AdvancedTurtle.forward(undoable)
-	if (turtle.forward()) then
-		AdvancedTurtle.relative = AdvancedTurtle.relative + AdvancedTurtle.facing.d
-		if (undoable) then
-			table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.back)
-		end
-		return true
-	else
-		return false
+function AdvancedTurtle.forceForward(timeout, undoable)
+	if (timeout == nil) then
+		timeout = 15
 	end
-end
-
-function AdvancedTurtle.back(undoable)
-	if (turtle.back()) then
-		AdvancedTurtle.relative = AdvancedTurtle.relative - AdvancedTurtle.facing.d
-		if (undoable) then
-			table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.forward)
-		end
-		return true
-	else
-		return false
-	end
-end
-
-function AdvancedTurtle.up(undoable)
-	if (turtle.up()) then
-		AdvancedTurtle.relative.y = AdvancedTurtle.relative.y + 1
-		if (undoable) then
-			table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.down)
-		end
-		return true
-	else
-		return false
-	end
-end
-
-function AdvancedTurtle.down(undoable)
-	if (turtle.down()) then
-		AdvancedTurtle.relative.y = AdvancedTurtle.relative.y - 1
-		if (undoable) then
-			table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.up)
-		end
-		return true
-	else
-		return false
-	end
-end
-
-function AdvancedTurtle.digForward(timeout, undoable)
 	for i = 1,timeout do
-		if (AdvancedTurtle.forward(undoable)) then
+		if (turtle.forward()) then
+			AdvancedTurtle.relative = AdvancedTurtle.relative + AdvancedTurtle.facing.d
+			if (undoable) then
+				table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.forceBack)
+			end
 			return
 		end
 		turtle.dig()
+		turtle.attack()
 	end
 	error("Timeout Error")
 end
 
-function AdvancedTurtle.digUp(timeout, undoable)
+function AdvancedTurtle.forceBack(timeout, undoable)
+	if (timeout == nil) then
+		timeout = 15
+	end
+	if (not turtle.back()) then
+		AdvancedTurtle.turnBack()
+		AdvancedTurtle.forceForward(timeout)
+		AdvancedTurtle.turnBack()
+		if (undoable) then
+			table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.forceForward)
+		end
+	else
+		AdvancedTurtle.relative = AdvancedTurtle.relative - AdvancedTurtle.facing.d
+		if (undoable) then
+			table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.forceForward)
+		end
+	end
+end
+
+function AdvancedTurtle.forceUp(timeout, undoable)
+	if (timeout == nil) then
+		timeout = 15
+	end
 	for i = 1,timeout do
-		if (AdvancedTurtle.up(undoable)) then
+		if (turtle.up()) then
+			AdvancedTurtle.relative.y = AdvancedTurtle.relative.y + 1
+			if (undoable) then
+				table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.forceDown)
+			end
 			return
 		end
 		turtle.digUp()
+		turtle.attackUp()
 	end
 	error("Timeout Error")
 end
 
-function AdvancedTurtle.digDown(timeout, undoable)
+function AdvancedTurtle.forceDigUp(timeout)
+	if (timeout == nil) then
+		timeout = 15
+	end
 	for i = 1,timeout do
-		if (AdvancedTurtle.down(undoable)) then
+		if (turtle.detectUp()) then
+			turtle.digUp()
+			turtle.attackUp()
+		else
+			return
+		end
+	end
+	error("Timeout Error")
+end
+
+function AdvancedTurtle.forceDown(timeout, undoable)
+	if (timeout == nil) then
+		timeout = 15
+	end
+	for i = 1,timeout do
+		if (turtle.down()) then
+			AdvancedTurtle.relative.y = AdvancedTurtle.relative.y - 1
+			if (undoable) then
+				table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.forceUp)
+			end
 			return
 		end
 		turtle.digDown()
+		turtle.attackDown()
 	end
 	error("Timeout Error")
-end
-
-function AdvancedTurtle.digBack(timeout, undoable)
-	if (not AdvancedTurtle.back(undoable)) then
-		AdvancedTurtle.turnBack()
-		AdvancedTurtle.digForward(timeout)
-		AdvancedTurtle.turnBack()
-		if (undoable) then
-			table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.forward)
-		end
-	end
 end
 
 function AdvancedTurtle.manhattan()
@@ -136,7 +139,7 @@ function AdvancedTurtle.manhattan()
 end
 
 function AdvancedTurtle.getAbsolute()
-	return vector.new(AdvancedTurtle.origin.x + AdvancedTurtle.relative.x, AdvancedTurtle.origin.y + AdvancedTurtle.relative.y, AdvancedTurtle.origin.z + AdvancedTurtle.relative.z)
+	return AdvancedTurtle.origin + AdvancedTurtle.relative
 end
 
 function AdvancedTurtle.inOrigin()
@@ -182,6 +185,50 @@ function AdvancedTurtle.findInvSpace(istart, iend)
 			return i
 		end
 	end, istart, iend)
+end
+
+function AdvancedTurtle.sameItem(i1, i2)
+	if ((i1 == nil and i2 ~= nil) or (i1 ~= nil and i2 == nil)) then
+		return false
+	end
+	if (i1 == nil and i2 == nil) then
+		return true
+	end
+	return (i1.name == i2.name and i1.damage == i2.damage)
+end
+
+function AdvancedTurtle.sortUpInv()
+	for i=1,16 do
+		local item = turtle.getItemDetail(i)
+		-- if empty, move the last item here
+		if (item == nil) then
+			for j=16,i+1,-1 do
+				if (turtle.getItemCount(j) > 0) then
+					turtle.select(j)
+					turtle.transferTo(i)
+					break
+				end
+			end
+		end
+		item = turtle.getItemDetail(i)
+		if (item == nil) then 
+			return #AdvancedTurtle.findInvSpace()
+		end
+
+		-- try to merge same item
+		if (item.count < 64) then
+			local similarList = AdvancedTurtle.findInvItem(item.name, item.damage, i+1, 16)
+			if (#similarList > 0) then
+				for j=#similarList,1,-1 do
+					turtle.select(similarList[j])
+					if ((not turtle.transferTo(i)) or turtle.getItemCount(i) == 64) then
+						break
+					end
+				end
+			end
+		end
+	end
+	return #AdvancedTurtle.findInvSpace()
 end
 
 return AdvancedTurtle

@@ -4,15 +4,25 @@ local AdvancedTurtle = require("/MinecraftRobotPrograms/Miner/AdvancedTurtle")
 
 local spiralLength = 3
 local distance = 1
+local INV_SPACE_TO_DUMP = 3
 function SpiralMiner.main()
 	print("Input Robot Direction: ")
 	AdvancedTurtle.setFacing(io.read())
+
+	print("Input Robox Coordinate X: ")
+	local x = tonumber(io.read())
+	print("Input Robox Coordinate Y: ")
+	local y = tonumber(io.read())
+	print("Input Robox Coordinate Z: ")
+	local z = tonumber(io.read())
+	AdvancedTurtle.setOrigin(x, y, z)
+
 	while (not redstone.getInput("back")) do
-		AdvancedTurtle.digForward(15)
+		AdvancedTurtle.forceForward(15)
 		ChainMine.chainMine()
-		AdvancedTurtle.digUp(15)
+		AdvancedTurtle.forceUp(15)
 		ChainMine.chainMine()
-		AdvancedTurtle.down()
+		AdvancedTurtle.forceDown(15)
 
 		SpiralMiner.checkFuel()
 		print("current fuel: "..turtle.getFuelLevel().."/"..turtle.getFuelLimit())
@@ -20,7 +30,7 @@ function SpiralMiner.main()
 
 		SpiralMiner.updateDirection()
 		print("spiralLength: "..spiralLength.." distance: "..distance)
-		print("rX: "..AdvancedTurtle.relative.x.." rZ: "..AdvancedTurtle.relative.z)
+		print("rX: "..AdvancedTurtle.relative.x.." rY: "..AdvancedTurtle.relative.y.." rZ: "..AdvancedTurtle.relative.z)
 	end
 end
 
@@ -43,13 +53,15 @@ function SpiralMiner.checkFuel()
 	local fuelList = AdvancedTurtle.findInvItem(fuel.coal.name)
 	for i,v in ipairs(fuelList) do
 		local coalRequired = math.floor((turtle.getFuelLimit() - turtle.getFuelLevel())/80)
-		local coalToFuel = coalRequired
-		if (coalToFuel > 64) then
-			coalToFuel = 64
+		if (coalRequired < 1) then
+			break
+		end
+		if (coalRequired > 64) then
+			coalRequired = 64
 		end
 
 		turtle.select(v)
-		turtle.refuel(coalToFuel)
+		turtle.refuel(coalRequired)
 	end
 
 	if (turtle.getFuelLevel() <= AdvancedTurtle.manhattan() + 50) then
@@ -62,8 +74,8 @@ function SpiralMiner.checkFuel()
 end
 
 function SpiralMiner.checkInv()
-	if (#AdvancedTurtle.findInvSpace() < 1) then
-		if (not SpiralMiner.dumpToBox()) then
+	if (#AdvancedTurtle.findInvSpace() < INV_SPACE_TO_DUMP) then
+		if (AdvancedTurtle.sortUpInv() >= INV_SPACE_TO_DUMP or (not SpiralMiner.dumpToBox())) then
 			SpiralMiner.goOrigin(SpiralMiner.dumpOrigin)
 		end
 	end
@@ -74,6 +86,12 @@ local BoxItem = {
 	name = "ic2:te",
 	damage = 111
 }
+
+-- local BoxItem = {
+-- 	count = 1,
+-- 	name = "minecraft:white_shulker_box",
+-- 	damage = 0
+-- }
 local wastes = {
 	-- common wastes
 	["minecraft:cobblestone"] = true,
@@ -94,35 +112,50 @@ local wastes = {
 function SpiralMiner.dumpToBox()
 	local iBox = AdvancedTurtle.findInvItem(BoxItem.name, BoxItem.damage)[1]
 	if (iBox == nil or turtle.getItemCount(iBox) > 1) then
-		error("No Box/More Than One Box")
+		-- error("No Box/More Than One Box")
+		return false
 	end
 	turtle.select(iBox)
-	turtle.placeUp()
+	AdvancedTurtle.forceDigUp(15)
+	if (not turtle.placeUp()) then
+		error("Failed To Place Box")
+	end
 	turtle.digDown()
 	local iFuel = AdvancedTurtle.findInvItem(fuel.coal.name)[1]
-	AdvancedTurtle.forEachInv(function (i)
-		if (i == iFuel or turtle.getItemCount(i) == 0) then
-			return
+	for i=1,16 do
+		if (i ~= iFuel and turtle.getItemCount(i) ~= 0) then
+			turtle.select(i)
+			if (wastes[turtle.getItemDetail(i).name]) then
+				turtle.dropDown()
+			else
+				turtle.dropUp()
+			end
 		end
-		turtle.select(i)
-		if (wastes[turtle.getItemDetail(i).name]) then
-			turtle.dropDown()
-		else
-			turtle.dropUp()
-		end
-	end)
+	end
 	turtle.digUp()
 	
-	return #AdvancedTurtle.findInvSpace() > 0
+	return #AdvancedTurtle.findInvSpace() > INV_SPACE_TO_DUMP
 end
 
 function SpiralMiner.dumpOrigin()
 	local iBox = AdvancedTurtle.findInvItem(BoxItem.name, BoxItem.damage)[1]
 	if (iBox == nil or turtle.getItemCount(iBox) > 1) then
-		error("No Box/More Than One Box")
+		local iFuel = AdvancedTurtle.findInvItem(fuel.coal.name)[1]
+		AdvancedTurtle.forEachInv(function (i)
+			while (i ~= iFuel and turtle.getItemCount(i) > 0) do
+				turtle.select(i)
+				if (not turtle.dropDown()) then
+					error("Storage Is Full")
+				end
+			end
+		end)
+		return
 	end
 	turtle.select(iBox)
-	turtle.placeUp()
+	AdvancedTurtle.forceDigUp(15)
+	if (not turtle.placeUp()) then
+		error("Failed To Place Box")
+	end
 	local iFuel = AdvancedTurtle.findInvItem(fuel.coal.name)[1]
 	AdvancedTurtle.forEachInv(function (i)
 		while (i ~= iFuel and turtle.getItemCount(i) > 0) do
@@ -133,23 +166,25 @@ function SpiralMiner.dumpOrigin()
 			turtle.suckUp()
 		end
 	end)
+	turtle.digUp()
 end
 
 function SpiralMiner.goOrigin(todo)
 	-- Manage the way back (inevitably destroy some diamonds on the way!)
-	while (true) do
-		local mov1 = AdvancedTurtle.relative.dot(AdvancedTurtle.relative,AdvancedTurtle.facing.d)
+	local mov1 = AdvancedTurtle.relative.dot(AdvancedTurtle.relative,AdvancedTurtle.facing.d)
+	for i=1, math.abs(mov1) do
 		if (mov1 < 0) then
-			AdvancedTurtle.digForward(15, true)
+			AdvancedTurtle.forceForward(15, true)
 		elseif (mov1 > 0) then
-			AdvancedTurtle.digBack(15, true)
+			AdvancedTurtle.forceBack(15, true)
 		else
 			break
 		end
 	end
 	AdvancedTurtle.turnLeft(true)
-	while not AdvancedTurtle.inOrigin() do
-		AdvancedTurtle.digForward(15, true)
+	local mov2 = AdvancedTurtle.relative.dot(AdvancedTurtle.relative, vector.new(1,1,1))
+	for i = 1, math.abs(mov2) do
+		AdvancedTurtle.forceForward(15, true)
 	end
 
 	todo()

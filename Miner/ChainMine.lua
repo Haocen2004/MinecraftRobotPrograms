@@ -35,43 +35,51 @@ function ChainMine.isOre (success, dat)
 		return false
 	end
 
-	-- don't consider valuable ore
+	if (oreList[oreStr]) then
+		local f = fs.open("ValuableOres.dat", "a")
+		f.write(dat.name)
+		f.write("@")
+		local pos = AdvancedTurtle.getAbsolute()
+		f.write("("..pos.x..", "..pos.y..", "..pos.z..")\n")
+		f.close()
+	end
+
 	return (not oreList[oreStr])
 end
 
 function ChainMine.chainMine()
 	if (ChainMine.isOre(turtle.inspectUp())) then
-		AdvancedTurtle.digUp(15)
+		AdvancedTurtle.forceUp(15)
 		ChainMine.chainMine()
-		AdvancedTurtle.down()
+		AdvancedTurtle.forceDown(15)
 	end
 	if (ChainMine.isOre(turtle.inspectDown())) then
-		AdvancedTurtle.digDown(15)
+		AdvancedTurtle.forceDown(15)
 		ChainMine.chainMine()
-		AdvancedTurtle.up()
+		AdvancedTurtle.forceUp(15)
 	end
 	if (ChainMine.isOre(turtle.inspect())) then
-		AdvancedTurtle.digForward(15)
+		AdvancedTurtle.forceForward(15)
 		ChainMine.chainMine()
-		AdvancedTurtle.back()
-	end
-	AdvancedTurtle.turnLeft()
-	if (ChainMine.isOre(turtle.inspect())) then
-		AdvancedTurtle.digForward(15)
-		ChainMine.chainMine()
-		AdvancedTurtle.back()
+		AdvancedTurtle.forceBack(15)
 	end
 	AdvancedTurtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		AdvancedTurtle.digForward(15)
+		AdvancedTurtle.forceForward(15)
 		ChainMine.chainMine()
-		AdvancedTurtle.back()
+		AdvancedTurtle.forceBack(15)
 	end
 	AdvancedTurtle.turnLeft()
 	if (ChainMine.isOre(turtle.inspect())) then
-		AdvancedTurtle.digForward(15)
+		AdvancedTurtle.forceForward(15)
 		ChainMine.chainMine()
-		AdvancedTurtle.back()
+		AdvancedTurtle.forceBack(15)
+	end
+	AdvancedTurtle.turnLeft()
+	if (ChainMine.isOre(turtle.inspect())) then
+		AdvancedTurtle.forceForward(15)
+		ChainMine.chainMine()
+		AdvancedTurtle.forceBack(15)
 	end
 	AdvancedTurtle.turnLeft()
 end
