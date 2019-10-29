@@ -22,7 +22,7 @@ end
 
 function AdvancedTurtle.turnLeft(undoable)
 	turtle.turnLeft()
-	AdvancedTurtle.facing = EnumFacing[AdvancedTurtle.facing.l]
+	AdvancedTurtle.facing = AdvancedTurtle.facing.l
 	if (undoable) then
 		table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.turnRight)
 	end
@@ -30,7 +30,7 @@ end
 
 function AdvancedTurtle.turnRight(undoable)
 	turtle.turnRight()
-	AdvancedTurtle.facing = EnumFacing[AdvancedTurtle.facing.r]
+	AdvancedTurtle.facing = AdvancedTurtle.facing.r
 	if (undoable) then
 		table.insert(AdvancedTurtle.undoStack, AdvancedTurtle.turnLeft)
 	end
