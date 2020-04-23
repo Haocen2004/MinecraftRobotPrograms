@@ -81,17 +81,17 @@ function SpiralMiner.checkInv()
 	end
 end
 
-local BoxItem = {
-	count = 1,
-	name = "ic2:te",
-	damage = 111
-}
-
 -- local BoxItem = {
 -- 	count = 1,
--- 	name = "minecraft:white_shulker_box",
--- 	damage = 0
+-- 	name = "ic2:te",
+-- 	damage = 111
 -- }
+
+local BoxItem = {
+	count = 1,
+	name = "minecraft:shulker_box",
+	damage = 0
+}
 local wastes = {
 	-- common wastes
 	["minecraft:cobblestone"] = true,
@@ -138,6 +138,9 @@ function SpiralMiner.dumpToBox()
 end
 
 function SpiralMiner.dumpOrigin()
+	-- with out storage
+	-- error("Storage Is Full")
+	-- with out storage
 	local iBox = AdvancedTurtle.findInvItem(BoxItem.name, BoxItem.damage)[1]
 	if (iBox == nil or turtle.getItemCount(iBox) > 1) then
 		local iFuel = AdvancedTurtle.findInvItem(fuel.coal.name)[1]

@@ -2,35 +2,34 @@ local ChainMine = {}
 local AdvancedTurtle = require("/MinecraftRobotPrograms/Miner/AdvancedTurtle")
 
 local oreList = {
-	["minecraft:coal_ore:0"] = false,
-	["minecraft:iron_ore:0"] = false,
-	["minecraft:gold_ore:0"] = false,
-	["minecraft:diamond_ore:0"] = true,
+	["minecraft:coal_ore"] = false,
+	["minecraft:iron_ore"] = false,
+	["minecraft:gold_ore"] = false,
+	["minecraft:diamond_ore"] = true,
 	["minecraft:redstone_ore:0"] = false,
-	["minecraft:lit_redstone_ore:0"] = false,
-	["minecraft:lapis_ore:0"] = false,
-	["minecraft:emerald_ore:0"] = false,
-	["minecraft:quartz_ore:0"] = false,
-	["biomsoplenty:biome_block:0"] = false,
-	["ic2:resource:1"] = false,
-	["ic2:resource:2"] = false,
-	["ic2:resource:3"] = false,
-	["ic2:resource:4"] = false,
-	["biomsoplenty:gem_ore:0"] = false,
-	["biomsoplenty:gem_ore:1"] = false,
-	["biomsoplenty:gem_ore:2"] = false,
-	["biomsoplenty:gem_ore:3"] = false,
-	["biomsoplenty:gem_ore:4"] = false,
-	["biomsoplenty:gem_ore:5"] = false,
-	["biomsoplenty:gem_ore:6"] = false,
-	["biomsoplenty:gem_ore:7"] = false,
+	["minecraft:lit_redstone_ore"] = false,
+	["minecraft:lapis_ore"] = false,
+	["minecraft:emerald_ore"] = false,
+	["mekanism:osmium_ore"] = false,
+	["mekanism:copper_ore"] = false,
+	["mekanism:tin_ore"] = false,
+	["silents_mechanisms:copper_ore"] = false,
+	["silents_mechanisms:tin_ore"] = false,
+	["silents_mechanisms:silver_ore"] = false,
+	["silents_mechanisms:lead_ore"] = false,
+	["silents_mechanisms:nickel_ore"] = false,
+	["silents_mechanisms:platinum_ore"] = false,
+	["silents_mechanisms:zinc_ore"] = false,
+	["silents_mechanisms:bismuth_ore"] = false,
+	["silents_mechanisms:bauxite_ore"] = false,
+	["silents_mechanisms:uranium_ore"] = false,
 }
 
 function ChainMine.isOre (success, dat)
 	if (not success) then
 		return false
 	end
-	local oreStr = dat.name..":"..dat.metadata
+	local oreStr = dat.name
 	if (oreList[oreStr] == nil) then
 		return false
 	end
